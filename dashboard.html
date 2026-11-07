@@ -162,5 +162,94 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
+<section style="margin:25px 15px;direction:rtl">
+  <h2>📡 الإشارات الواردة</h2>
+
+  <p style="color:#9caec7">
+    إشارات تجريبية وغير مؤكدة ببيانات السوق
+  </p>
+
+  <button
+    onclick="loadTradingSignals()"
+    style="padding:12px;background:#2563eb;
+    color:white;border:0;border-radius:8px">
+    تحديث الإشارات
+  </button>
+
+  <div style="overflow-x:auto;margin-top:15px">
+    <table style="width:100%">
+      <thead>
+        <tr>
+          <th>السهم</th>
+          <th>الاتجاه</th>
+          <th>الفريم</th>
+          <th>الحالة</th>
+        </tr>
+      </thead>
+      <tbody id="trading-signals">
+        <tr>
+          <td colspan="4">جاري التحميل...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+async function loadTradingSignals() {
+  const tbody = document.getElementById(
+    "trading-signals"
+  );
+
+  try {
+    const response = await fetch(
+      "/api/integration/signals",
+      { cache: "no-store" }
+    );
+
+    if (!response.ok) {
+      throw new Error("Request failed");
+    }
+
+    const data = await response.json();
+    tbody.replaceChildren();
+
+    if (!data.signals || data.signals.length === 0) {
+      const row = tbody.insertRow();
+      const cell = row.insertCell();
+      cell.colSpan = 4;
+      cell.textContent = "لا توجد إشارات حاليًا";
+      return;
+    }
+
+    data.signals.forEach(signal => {
+      const row = tbody.insertRow();
+
+      [
+        signal.symbol,
+        signal.direction,
+        signal.timeframe + " دقيقة",
+        signal.verified_market_data
+          ? "تم التحقق من البيانات"
+          : "غير مؤكدة"
+      ].forEach(value => {
+        const cell = row.insertCell();
+        cell.textContent = value;
+        cell.style.padding = "12px 6px";
+      });
+    });
+
+  } catch (error) {
+    tbody.replaceChildren();
+    const row = tbody.insertRow();
+    const cell = row.insertCell();
+    cell.colSpan = 4;
+    cell.textContent = "تعذر تحميل الإشارات";
+  }
+}
+
+loadTradingSignals();
+</script>
+
 </body>
 </html>
