@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Trading Command Center</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090e19;color:#edf2ff;font-family:Arial,sans-serif}
+header{padding:22px 16px;background:#111b2c;border-bottom:1px solid #29364c}
+h1{font-size:21px;margin:0 0 8px}
+small,.muted{color:#9caec7}
+main{padding:15px;max-width:1050px;margin:auto}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.card{background:#141f32;border:1px solid #2a3a54;border-radius:14px;padding:17px;margin-bottom:13px}
+.card b{font-size:21px;display:block;margin-top:10px}
+.green{color:#39dba2}.yellow{color:#ffc66d}
+h2{font-size:18px;margin:24px 0 13px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:13px 7px;text-align:right;border-bottom:1px solid #2a3a54}
+th{color:#9caec7}
+button{background:#2864db;border:0;color:white;padding:12px 18px;border-radius:10px;font-weight:bold}
+.tag{background:#243450;border-radius:8px;padding:5px 9px}
+footer{text-align:center;color:#8c9db6;padding:25px;font-size:12px}
+@media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header>
+<h1>📊 AI Trading Command Center</h1>
+<small>مركز قيادة تداول الأسهم والأوبشن</small>
+</header>
+<main>
+<div class="grid">
+<div class="card">حالة الخادم<b id="server">جارٍ الفحص</b></div>
+<div class="card">الأسهم المستهدفة<b>50</b><small>قائمة قيد الإعداد</small></div>
+<div class="card">فرص مؤكدة<b>0</b><small>لا توجد بيانات حية</small></div>
+<div class="card">اتصال الوسيط<b class="yellow">غير متصل</b></div>
+</div>
+
+<h2>ماسح فرص الأوبشن</h2>
+<div class="card">
+<p class="muted">هذه قائمة مراقبة أولية وليست إشارات تداول.</p>
+<table>
+<thead>
+<tr><th>السهم</th><th>الاتجاه</th><th>الحالة</th></tr>
+</thead>
+<tbody>
+<tr><td>NVDA</td><td>—</td><td>بانتظار البيانات</td></tr>
+<tr><td>TSLA</td><td>—</td><td>بانتظار البيانات</td></tr>
+<tr><td>MU</td><td>—</td><td>بانتظار البيانات</td></tr>
+<tr><td>AVGO</td><td>—</td><td>بانتظار البيانات</td></tr>
+<tr><td>META</td><td>—</td><td>بانتظار البيانات</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>مراقبة النظام</h2>
+<div class="card">
+<p id="details">جارٍ الاتصال بالخادم...</p>
+<button onclick="checkServer()">تحديث حالة الاتصال</button>
+</div>
+</main>
+<footer>نسخة تجريبية — لا توجد أسعار مباشرة أو توصيات استثمارية</footer>
+<script>
+async function checkServer(){
+ const el=document.getElementById("server");
+ const details=document.getElementById("details");
+ el.textContent="جارٍ الفحص";
+ try{
+  const response=await fetch("/health",{cache:"no-store"});
+  if(!response.ok)throw Error("HTTP "+response.status);
+  const data=await response.json();
+  if(data.status!=="ok")throw Error("حالة غير متوقعة");
+  el.textContent="متصل ✓";
+  el.className="green";
+  details.textContent="الخادم يعمل. آخر فحص: "+new Date().toLocaleTimeString("ar-SA");
+ }catch(error){
+  el.textContent="تعذر الاتصال";
+  el.className="yellow";
+  details.textContent="تعذر التحقق من الخادم: "+error.message;
+ }
+}
+checkServer();
+</script>
+</body>
+</html>
