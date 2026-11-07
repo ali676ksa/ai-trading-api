@@ -33,3 +33,14 @@ from fastapi.responses import FileResponse
 def dashboard():
     path = Path(__file__).resolve().parent / "dashboard.html"
     return FileResponse(path, media_type="text/html")
+
+
+from pathlib import Path
+from fastapi.responses import FileResponse
+
+@app.get("/dashboard")
+def dashboard():
+    return FileResponse(
+        Path(__file__).resolve().parent / "dashboard.html"
+    )
+
