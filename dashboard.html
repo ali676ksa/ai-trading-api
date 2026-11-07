@@ -84,5 +84,36 @@ async function checkServer(){
 }
 checkServer();
 </script>
+ <script>
+async function loadScanner() {
+  const tbody = document.querySelector("tbody");
+  if (!tbody) return;
+  try {
+    const response = await fetch("/api/scanner", {cache:"no-store"});
+    if (!response.ok) throw new Error("API unavailable");
+    const data = await response.json();
+    if (!Array.isArray(data.stocks)) throw new Error("Invalid data");
+    tbody.replaceChildren();
+    data.stocks.forEach(item => {
+      const row = document.createElement("tr");
+      [item.symbol, item.direction || "WAIT", "بانتظار الأسعار"].forEach(value => {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.appendChild(cell);
+      });
+      tbody.appendChild(row);
+    });
+  } catch (error) {
+    tbody.replaceChildren();
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 3;
+    cell.textContent = "تعذر تحميل قائمة الأسهم";
+    row.appendChild(cell);
+    tbody.appendChild(row);
+  }
+}
+loadScanner();
+</script>
 </body>
 </html>
