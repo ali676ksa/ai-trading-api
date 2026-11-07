@@ -72,6 +72,18 @@ def scanner():
                 "target": None
             }
             for symbol in WATCHLIST
+            
+@app.get("/api/scanner")
+def scanner():
+    return {
+        "status": "ready",
+        "mode": "demo",
+        "total_stocks": 50,
+        "confirmed_opportunities": 0,
+        "broker_connected": False,
+        "message": "Scanner endpoint is working. Live market data is not connected yet."
+    }
+
         ]
     }
 
