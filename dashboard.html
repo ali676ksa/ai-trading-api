@@ -115,5 +115,52 @@ async function loadScanner() {
 }
 loadScanner();
 </script>
+ 
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const table = document.querySelector("table");
+  if (!table) return;
+
+  const toolbar = document.createElement("div");
+  toolbar.style.cssText =
+    "display:flex;gap:10px;margin:15px 0;flex-wrap:wrap";
+
+  const search = document.createElement("input");
+  search.placeholder = "🔎 ابحث عن سهم...";
+  search.style.cssText =
+    "padding:12px;background:#141f32;color:white;border:1px solid #35445c;border-radius:8px;flex:1;min-width:160px";
+
+  const filter = document.createElement("select");
+  filter.style.cssText = search.style.cssText;
+  filter.innerHTML = `
+    <option value="ALL">جميع الاتجاهات</option>
+    <option value="CALL">CALL</option>
+    <option value="PUT">PUT</option>
+    <option value="WAIT">WAIT</option>
+  `;
+
+  toolbar.append(search, filter);
+  table.parentNode.insertBefore(toolbar, table);
+
+  function applyFilters() {
+    table.querySelectorAll("tbody tr").forEach(row => {
+      const cells = row.querySelectorAll("td");
+      if (cells.length < 2) return;
+
+      const symbol = cells[0].textContent.toUpperCase();
+      const direction = cells[1].textContent.toUpperCase();
+
+      row.style.display =
+        symbol.includes(search.value.trim().toUpperCase()) &&
+        (filter.value === "ALL" || direction.includes(filter.value))
+        ? "" : "none";
+    });
+  }
+
+  search.addEventListener("input", applyFilters);
+  filter.addEventListener("change", applyFilters);
+});
+</script>
+
 </body>
 </html>
