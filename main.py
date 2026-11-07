@@ -25,3 +25,11 @@ def api_status():
         "provider": "none",
         "mode": "demo"
     }
+
+from pathlib import Path
+from fastapi.responses import FileResponse
+
+@app.get("/dashboard", include_in_schema=False)
+def dashboard():
+    path = Path(__file__).resolve().parent / "dashboard.html"
+    return FileResponse(path, media_type="text/html")
