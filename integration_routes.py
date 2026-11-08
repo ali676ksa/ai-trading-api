@@ -1,6 +1,7 @@
 
 import os
 import hmac
+from signal_store import save_signal, get_signals
 from datetime import datetime, timezone
 from collections import deque
 from threading import Lock
@@ -114,12 +115,46 @@ async def tradingview_webhook(request: Request):
         "verified_market_data": False
     }
 
-    with signals_lock:
-        signals.appendleft(signal)
+    
+    try:
+        signal = save_signal(
+            symbol=symbol,
+            direction=direction,
+            timeframe=timeframe,
+            source="TradingView",
+            verified_market_data=False
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail="Signal storage unavailable"
+        )
+
+
+@router.get("/api/integration/signals")
+def list_saved_signals():
+    try:
+        items = get_signals(limit=50)
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail="Signal storage 
+@router.get("/api/integration/signals")
+def list_saved_signals():
+    try:
+        items = get_signals(limit=50)
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail="Signal storage unavailable"
+        )
 
     return {
-        "accepted": True,
-        "signal": signal
+        "total": len(items),
+        "signals": items,
+        "note": "Unverified alerts, not trade recommendations"
+    }
+
     }
 
 
