@@ -453,5 +453,85 @@ refreshStatus();
 loadScanner();
 </script>
 
+<section id="candle-demo" style="margin:24px 0;padding:20px;background:#19233b;color:#fff;border-radius:16px;direction:rtl">
+  <h2>تحليل الشموع — اختبار المحرك</h2>
+  <p>بيانات تجريبية فقط، وليست أسعار سوق مباشرة أو توصيات تداول.</p>
+
+  <label for="candle-scenario">اختر سيناريو الاختبار:</label>
+  <select id="candle-scenario" style="padding:10px;margin:10px;color:#111">
+    <option value="1">صعود متوافق CALL</option>
+    <option value="-1">هبوط متوافق PUT</option>
+    <option value="0">تعارض مع SPX — WAIT</option>
+  </select>
+
+  <button type="button" id="candle-run" style="padding:12px;background:#4169e1;color:white;border:0;border-radius:8px">
+    اختبار تحليل الشموع
+  </button>
+
+  <pre id="candle-output" style="white-space:pre-wrap;overflow-wrap:anywhere;text-align:right">لم يبدأ الاختبار بعد</pre>
+</section>
+
+<script>
+(function () {
+  const button = document.getElementById("candle-run");
+  const output = document.getElementById("candle-output");
+
+  function makeCandles(step) {
+    return Array.from({length: 60}, (_, i) => ({
+      close: 200 + i * step
+    }));
+  }
+
+  button.addEventListener("click", async function () {
+    const scenario = Number(
+      document.getElementById("candle-scenario").value
+    );
+    const stockStep = scenario === 0 ? 1 : scenario;
+    const spxStep = scenario === 0 ? -1 : scenario;
+
+    const frames = {
+      "5": makeCandles(stockStep),
+      "30": makeCandles(stockStep),
+      "60": makeCandles(stockStep)
+    };
+
+    output.textContent = "جارٍ تنفيذ الاختبار...";
+    button.disabled = true;
+
+    try {
+      const response = await fetch("/api/analysis/candles", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          symbol: "TSLA",
+          frames: frames,
+          spx_candles: makeCandles(spxStep)
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+      }
+
+      const result = await response.json();
+
+      output.textContent =
+        "السهم: " + result.symbol + "\n" +
+        "الاتجاه: " + result.direction + "\n" +
+        "الحالة: " + result.status + "\n" +
+        "فريم 5: " + result.frames["5"] + "\n" +
+        "فريم 30: " + result.frames["30"] + "\n" +
+        "فريم 60: " + result.frames["60"] + "\n" +
+        "SPX: " + result.spx_direction + "\n" +
+        "بيانات موثوقة: لا — اختبار تجريبي";
+    } catch (error) {
+      output.textContent = "فشل الاختبار: " + error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
