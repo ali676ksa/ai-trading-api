@@ -177,8 +177,14 @@ def list_saved_signals(request: Request):
 from signal_engine import evaluate_signal
 from datetime import datetime, timezone, timedelta
 
+
+from fastapi import Header
+
 @router.get("/api/analysis/saved")
-def evaluate_saved_signals(request: Request):
+def evaluate_saved_signals(
+    x_signals_secret: str = Header(default="")
+):
+
     read_secret = os.getenv("SIGNALS_READ_SECRET", "")
 
     if not read_secret:
@@ -187,9 +193,9 @@ def evaluate_saved_signals(request: Request):
             detail="Signal access not configured"
         )
 
-    supplied_secret = request.headers.get(
-        "X-Signals-Secret", ""
-    )
+    
+    supplied_secret = x_signals_secret
+
 
     if not hmac.compare_digest(
         supplied_secret, read_secret
