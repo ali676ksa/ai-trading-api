@@ -12,6 +12,9 @@ from signal_store import (
 router = APIRouter()
 
 ALLOWED_SYMBOLS = {
+    
+    "SPX",
+
     "NVDA", "TSLA", "MU", "AVGO", "AMD",
     "MSFT", "AAPL", "AMZN", "META", "GOOGL",
     "GOOG", "NFLX", "PLTR", "APP", "MSTR",
