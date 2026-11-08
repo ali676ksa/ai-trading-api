@@ -1,17 +1,15 @@
 
 import os
 import hmac
-from signal_store import save_signal, get_signals
-from datetime import datetime, timezone
-from collections import deque
-from threading import Lock
-
 from fastapi import APIRouter, HTTPException, Request
 
-router = APIRouter()
+from signal_store import (
+    save_signal,
+    get_signals,
+    count_signals
+)
 
-signals = deque(maxlen=100)
-signals_lock = Lock()
+router = APIRouter()
 
 ALLOWED_SYMBOLS = {
     "NVDA", "TSLA", "MU", "AVGO", "AMD",
@@ -29,18 +27,25 @@ ALLOWED_SYMBOLS = {
 
 @router.get("/api/integration/status")
 def integration_status():
+    try:
+        total = count_signals()
+        database_connected = True
+    except Exception:
+        total = 0
+        database_connected = False
+
     return {
         "status": "ready",
         "tradingview": "webhook_ready",
         "ibkr": "not_connected",
-        "signals_received": len(signals),
-        "live_prices": False
+        "signals_received": total,
+        "live_prices": False,
+        "database_connected": database_connected
     }
 
 
 @router.post("/api/tradingview/webhook")
 async def tradingview_webhook(request: Request):
-
     secret = os.getenv("TRADINGVIEW_WEBHOOK_SECRET")
 
     if not secret:
@@ -79,12 +84,17 @@ async def tradingview_webhook(request: Request):
             detail="Unauthorized"
         )
 
-    symbol = str(data.get("symbol", "")).upper().strip()
+    symbol = str(
+        data.get("symbol", "")
+    ).upper().strip()
+
     direction = str(
         data.get("direction", "")
     ).upper().strip()
 
-    timeframe = str(data.get("timeframe", "")).strip()
+    timeframe = str(
+        data.get("timeframe", "")
+    ).strip()
 
     if symbol not in ALLOWED_SYMBOLS:
         raise HTTPException(
@@ -104,18 +114,6 @@ async def tradingview_webhook(request: Request):
             detail="Invalid timeframe"
         )
 
-    signal = {
-        "symbol": symbol,
-        "direction": direction,
-        "timeframe": timeframe,
-        "source": "TradingView",
-        "received_at": datetime.now(
-            timezone.utc
-        ).isoformat(),
-        "verified_market_data": False
-    }
-
-    
     try:
         signal = save_signal(
             symbol=symbol,
@@ -130,17 +128,34 @@ async def tradingview_webhook(request: Request):
             detail="Signal storage unavailable"
         )
 
+    return {
+        "accepted": True,
+        "signal": signal
+    }
+
 
 @router.get("/api/integration/signals")
-def list_saved_signals():
-    try:
-        items = get_signals(limit=50)
-    except Exception:
+def list_saved_signals(request: Request):
+    read_secret = os.getenv("SIGNALS_READ_SECRET")
+
+    if not read_secret:
         raise HTTPException(
             status_code=503,
-            detail="Signal storage 
-@router.get("/api/integration/signals")
-def list_saved_signals():
+            detail="Signal access not configured"
+        )
+
+    supplied_secret = request.headers.get(
+        "X-Signals-Secret", ""
+    )
+
+    if not hmac.compare_digest(
+        supplied_secret, read_secret
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized"
+        )
+
     try:
         items = get_signals(limit=50)
     except Exception:
@@ -152,19 +167,8 @@ def list_saved_signals():
     return {
         "total": len(items),
         "signals": items,
-        "note": "Unverified alerts, not trade recommendations"
-    }
-
-    }
-
-
-@router.get("/api/integration/signals")
-def get_signals():
-    with signals_lock:
-        items = list(signals)
-
-    return {
-        "total": len(items),
-        "signals": items,
-        "note": "Unverified alerts, not trade recommendations"
+        "note": (
+            "Unverified alerts, "
+            "not trade recommendations"
+        )
     }
