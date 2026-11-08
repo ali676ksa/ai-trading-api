@@ -21,4 +21,4 @@ jobs:
           python-version: "3.11"
 
       - name: Run candle tests
-run: python -m unittest -v test_candle_engine test_live_candles
+        run: python -m unittest -v test_candle_engine test_live_candles
