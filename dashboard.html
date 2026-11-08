@@ -3,252 +3,331 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AI Trading Command Center</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#090e19;color:#edf2ff;font-family:Arial,sans-serif}
-header{padding:22px 16px;background:#111b2c;border-bottom:1px solid #29364c}
-h1{font-size:21px;margin:0 0 8px}
-small,.muted{color:#9caec7}
-main{padding:15px;max-width:1050px;margin:auto}
+header{background:#141d30;padding:24px 15px;text-align:center}
+h1{font-size:23px;margin:0 0 10px}
+h2{font-size:20px;margin:26px 0 15px}
+p{color:#a4b1ca;line-height:1.7}
+main{max-width:1100px;margin:auto;padding:16px}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.card{background:#141f32;border:1px solid #2a3a54;border-radius:14px;padding:17px;margin-bottom:13px}
-.card b{font-size:21px;display:block;margin-top:10px}
-.green{color:#39dba2}.yellow{color:#ffc66d}
-h2{font-size:18px;margin:24px 0 13px}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{padding:13px 7px;text-align:right;border-bottom:1px solid #2a3a54}
-th{color:#9caec7}
-button{background:#2864db;border:0;color:white;padding:12px 18px;border-radius:10px;font-weight:bold}
-.tag{background:#243450;border-radius:8px;padding:5px 9px}
-footer{text-align:center;color:#8c9db6;padding:25px;font-size:12px}
-@media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)}}
+.card{background:#172136;border:1px solid #34435d;border-radius:17px;padding:18px}
+.card strong{display:block;font-size:24px;margin-top:12px}
+.green{color:#43d99c}
+.yellow{color:#ffcb70}
+.red{color:#ff7777}
+.muted{color:#a4b1ca}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}
+input,select{background:#111b2d;color:white;border:1px solid #40506b;border-radius:9px;padding:12px;max-width:100%;font-size:15px}
+button{background:#3768dc;color:white;border:0;border-radius:10px;padding:13px 18px;cursor:pointer;font-weight:bold}
+button:disabled{opacity:.5}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:13px 9px;text-align:right;border-bottom:1px solid #34435d;white-space:nowrap}
+th{color:#a4b1ca}
+.tag{border-radius:8px;background:#293b59;padding:5px 9px;display:inline-block}
+.notice{font-size:13px;color:#afbed8;margin-top:12px}
+footer{text-align:center;color:#8d9bb5;font-size:13px;padding:35px}
+@media(min-width:750px){.grid{grid-template-columns:repeat(4,1fr)}}
 </style>
 </head>
 <body>
+
 <header>
 <h1>📊 AI Trading Command Center</h1>
-<small>مركز قيادة تداول الأسهم والأوبشن</small>
+<p>مركز قيادة تداول الأسهم والأوبشن</p>
 </header>
+
 <main>
+
 <div class="grid">
-<div class="card">حالة الخادم<b id="server">جارٍ الفحص</b></div>
-<div class="card">الأسهم المستهدفة<b>50</b><small>قائمة قيد الإعداد</small></div>
-<div class="card">فرص مؤكدة<b>0</b><small>لا توجد بيانات حية</small></div>
-<div class="card">اتصال الوسيط<b class="yellow">غير متصل</b></div>
+<div class="card">
+حالة الخادم
+<strong id="server">جارٍ الفحص...</strong>
+</div>
+<div class="card">
+الأسهم المستهدفة
+<strong id="stockCount">50</strong>
+</div>
+<div class="card">
+قاعدة البيانات
+<strong id="database">جارٍ الفحص...</strong>
+</div>
+<div class="card">
+الإشارات المحفوظة
+<strong id="signalCount">—</strong>
+</div>
 </div>
 
-<h2>ماسح فرص الأوبشن</h2>
+<h2>📈 ماسح فرص الأوبشن</h2>
 <div class="card">
-<p class="muted">هذه قائمة مراقبة أولية وليست إشارات تداول.</p>
+<p>قائمة مراقبة أولية. لا توجد توصيات تداول مؤكدة دون بيانات السوق.</p>
+<div class="controls">
+<input id="search" placeholder="🔎 ابحث عن سهم">
+<select id="filter">
+<option value="ALL">جميع الاتجاهات</option>
+<option value="CALL">CALL</option>
+<option value="PUT">PUT</option>
+<option value="WAIT">WAIT</option>
+</select>
+<button onclick="loadScanner()">تحديث الماسح</button>
+</div>
+<div class="tablewrap">
 <table>
 <thead>
 <tr><th>السهم</th><th>الاتجاه</th><th>الحالة</th></tr>
 </thead>
-<tbody>
-<tr><td>NVDA</td><td>—</td><td>بانتظار البيانات</td></tr>
-<tr><td>TSLA</td><td>—</td><td>بانتظار البيانات</td></tr>
-<tr><td>MU</td><td>—</td><td>بانتظار البيانات</td></tr>
-<tr><td>AVGO</td><td>—</td><td>بانتظار البيانات</td></tr>
-<tr><td>META</td><td>—</td><td>بانتظار البيانات</td></tr>
+<tbody id="scannerRows">
+<tr><td colspan="3">جارٍ التحميل...</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<h2>🛰️ الإشارات الواردة</h2>
+<div class="card">
+<p>إشارات TradingView المحفوظة في Neon. لا تعتبر توصيات شراء أو بيع.</p>
+
+<label for="readSecret">مفتاح قراءة الإشارات</label>
+<div class="controls">
+<input
+id="readSecret"
+type="password"
+placeholder="الصق SIGNALS_READ_SECRET"
+autocomplete="off"
+spellcheck="false"
+>
+<button onclick="loadSignals()">عرض الإشارات</button>
+</div>
+
+<p class="notice">
+يُستخدم المفتاح في طلب القراءة فقط، ولا يُحفظ داخل الكود أو في التخزين المحلي.
+</p>
+
+<div class="tablewrap">
+<table>
+<thead>
+<tr>
+<th>السهم</th>
+<th>الاتجاه</th>
+<th>الفريم</th>
+<th>الحالة</th>
+<th>وقت الاستلام</th>
+</tr>
+</thead>
+<tbody id="signalRows">
+<tr>
+<td colspan="5">أدخل مفتاح القراءة لعرض الإشارات المحفوظة</td>
+</tr>
 </tbody>
 </table>
 </div>
 
-<h2>مراقبة النظام</h2>
-<div class="card">
-<p id="details">جارٍ الاتصال بالخادم...</p>
-<button onclick="checkServer()">تحديث حالة الاتصال</button>
+<p id="signalMessage" class="muted"></p>
 </div>
+
+<h2>🛡️ مراقبة النظام</h2>
+<div class="card">
+<p id="systemStatus">جارٍ التحقق من النظام...</p>
+<button onclick="refreshStatus()">تحديث حالة الاتصال</button>
+<p class="notice">
+لا توجد أسعار مباشرة أو توصيات مؤكدة حتى توصيل مزود بيانات السوق والتحقق منها.
+</p>
+</div>
+
 </main>
-<footer>نسخة تجريبية — لا توجد أسعار مباشرة أو توصيات استثمارية</footer>
+
+<footer>
+نسخة تجريبية — إشارات غير مؤكدة وليست توصيات استثمارية
+</footer>
+
 <script>
-async function checkServer(){
- const el=document.getElementById("server");
- const details=document.getElementById("details");
- el.textContent="جارٍ الفحص";
- try{
-  const response=await fetch("/health",{cache:"no-store"});
-  if(!response.ok)throw Error("HTTP "+response.status);
-  const data=await response.json();
-  if(data.status!=="ok")throw Error("حالة غير متوقعة");
-  el.textContent="متصل ✓";
-  el.className="green";
-  details.textContent="الخادم يعمل. آخر فحص: "+new Date().toLocaleTimeString("ar-SA");
- }catch(error){
-  el.textContent="تعذر الاتصال";
-  el.className="yellow";
-  details.textContent="تعذر التحقق من الخادم: "+error.message;
- }
+"use strict";
+
+let scannerStocks = [];
+
+function setText(id, value) {
+  document.getElementById(id).textContent = value;
 }
-checkServer();
-</script>
- <script>
-async function loadScanner() {
-  const tbody = document.querySelector("tbody");
-  if (!tbody) return;
+
+function cell(value) {
+  const td = document.createElement("td");
+  td.textContent = value == null ? "—" : String(value);
+  return td;
+}
+
+function showMessage(tbodyId, message, columns) {
+  const tbody = document.getElementById(tbodyId);
+  tbody.replaceChildren();
+  const tr = document.createElement("tr");
+  const td = cell(message);
+  td.colSpan = columns;
+  tr.appendChild(td);
+  tbody.appendChild(tr);
+}
+
+async function refreshStatus() {
   try {
-    const response = await fetch("/api/scanner", {cache:"no-store"});
-    if (!response.ok) throw new Error("API unavailable");
+    const response = await fetch("/api/integration/status", {
+      cache: "no-store"
+    });
+    if (!response.ok) throw new Error("Status unavailable");
+
     const data = await response.json();
-    if (!Array.isArray(data.stocks)) throw new Error("Invalid data");
-    tbody.replaceChildren();
-    data.stocks.forEach(item => {
-      const row = document.createElement("tr");
-      [item.symbol, item.direction || "WAIT", "بانتظار الأسعار"].forEach(value => {
-        const cell = document.createElement("td");
-        cell.textContent = value;
-        row.appendChild(cell);
-      });
-      tbody.appendChild(row);
-    });
-  } catch (error) {
-    tbody.replaceChildren();
-    const row = document.createElement("tr");
-    const cell = document.createElement("td");
-    cell.colSpan = 3;
-    cell.textContent = "تعذر تحميل قائمة الأسهم";
-    row.appendChild(cell);
-    tbody.appendChild(row);
-  }
-}
-loadScanner();
-</script>
- 
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const table = document.querySelector("table");
-  if (!table) return;
 
-  const toolbar = document.createElement("div");
-  toolbar.style.cssText =
-    "display:flex;gap:10px;margin:15px 0;flex-wrap:wrap";
+    setText("server", data.status === "ready" ? "✅ متصل" : "غير جاهز");
+    setText("database", data.database_connected ? "✅ متصلة" : "❌ غير متصلة");
+    setText("signalCount", data.signals_received ?? "—");
 
-  const search = document.createElement("input");
-  search.placeholder = "🔎 ابحث عن سهم...";
-  search.style.cssText =
-    "padding:12px;background:#141f32;color:white;border:1px solid #35445c;border-radius:8px;flex:1;min-width:160px";
-
-  const filter = document.createElement("select");
-  filter.style.cssText = search.style.cssText;
-  filter.innerHTML = `
-    <option value="ALL">جميع الاتجاهات</option>
-    <option value="CALL">CALL</option>
-    <option value="PUT">PUT</option>
-    <option value="WAIT">WAIT</option>
-  `;
-
-  toolbar.append(search, filter);
-  table.parentNode.insertBefore(toolbar, table);
-
-  function applyFilters() {
-    table.querySelectorAll("tbody tr").forEach(row => {
-      const cells = row.querySelectorAll("td");
-      if (cells.length < 2) return;
-
-      const symbol = cells[0].textContent.toUpperCase();
-      const direction = cells[1].textContent.toUpperCase();
-
-      row.style.display =
-        symbol.includes(search.value.trim().toUpperCase()) &&
-        (filter.value === "ALL" || direction.includes(filter.value))
-        ? "" : "none";
-    });
-  }
-
-  search.addEventListener("input", applyFilters);
-  filter.addEventListener("change", applyFilters);
-});
-</script>
-
-<section style="margin:25px 15px;direction:rtl">
-  <h2>📡 الإشارات الواردة</h2>
-
-  <p style="color:#9caec7">
-    إشارات تجريبية وغير مؤكدة ببيانات السوق
-  </p>
-
-  <button
-    onclick="loadTradingSignals()"
-    style="padding:12px;background:#2563eb;
-    color:white;border:0;border-radius:8px">
-    تحديث الإشارات
-  </button>
-
-  <div style="overflow-x:auto;margin-top:15px">
-    <table style="width:100%">
-      <thead>
-        <tr>
-          <th>السهم</th>
-          <th>الاتجاه</th>
-          <th>الفريم</th>
-          <th>الحالة</th>
-        </tr>
-      </thead>
-      <tbody id="trading-signals">
-        <tr>
-          <td colspan="4">جاري التحميل...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<script>
-async function loadTradingSignals() {
-  const tbody = document.getElementById(
-    "trading-signals"
-  );
-
-  try {
-    const response = await fetch(
-      "/api/integration/signals",
-      { cache: "no-store" }
+    setText(
+      "systemStatus",
+      "الخادم: " + (data.status || "غير معروف") +
+      " | Neon: " + (data.database_connected ? "متصلة" : "غير متصلة") +
+      " | TradingView: " + (data.tradingview || "غير معروف") +
+      " | IBKR: " + (data.ibkr || "غير متصل")
     );
-
-    if (!response.ok) {
-      throw new Error("Request failed");
-    }
-
-    const data = await response.json();
-    tbody.replaceChildren();
-
-    if (!data.signals || data.signals.length === 0) {
-      const row = tbody.insertRow();
-      const cell = row.insertCell();
-      cell.colSpan = 4;
-      cell.textContent = "لا توجد إشارات حاليًا";
-      return;
-    }
-
-    data.signals.forEach(signal => {
-      const row = tbody.insertRow();
-
-      [
-        signal.symbol,
-        signal.direction,
-        signal.timeframe + " دقيقة",
-        signal.verified_market_data
-          ? "تم التحقق من البيانات"
-          : "غير مؤكدة"
-      ].forEach(value => {
-        const cell = row.insertCell();
-        cell.textContent = value;
-        cell.style.padding = "12px 6px";
-      });
-    });
-
   } catch (error) {
-    tbody.replaceChildren();
-    const row = tbody.insertRow();
-    const cell = row.insertCell();
-    cell.colSpan = 4;
-    cell.textContent = "تعذر تحميل الإشارات";
+    setText("server", "تعذر الاتصال");
+    setText("database", "غير معروف");
+    setText("systemStatus", "تعذر فحص حالة النظام");
   }
 }
 
-loadTradingSignals();
+async function loadScanner() {
+  showMessage("scannerRows", "جارٍ تحميل الأسهم...", 3);
+
+  try {
+    const response = await fetch("/api/scanner", {
+      cache: "no-store"
+    });
+    if (!response.ok) throw new Error("Scanner unavailable");
+
+    const data = await response.json();
+    scannerStocks = Array.isArray(data.stocks) ? data.stocks : [];
+
+    setText("stockCount", data.total ?? scannerStocks.length);
+    renderScanner();
+  } catch (error) {
+    showMessage("scannerRows", "تعذر تحميل قائمة الأسهم", 3);
+  }
+}
+
+function renderScanner() {
+  const search = document.getElementById("search").value.trim().toUpperCase();
+  const filter = document.getElementById("filter").value;
+
+  const selected = scannerStocks.filter(stock => {
+    const symbol = String(stock.symbol || "").toUpperCase();
+    const direction = String(stock.direction || "WAIT").toUpperCase();
+
+    return symbol.includes(search) &&
+      (filter === "ALL" || filter === direction);
+  });
+
+  const tbody = document.getElementById("scannerRows");
+  tbody.replaceChildren();
+
+  if (!selected.length) {
+    showMessage("scannerRows", "لا توجد أسهم مطابقة", 3);
+    return;
+  }
+
+  selected.forEach(stock => {
+    const tr = document.createElement("tr");
+    const direction = String(stock.direction || "WAIT").toUpperCase();
+
+    tr.appendChild(cell(stock.symbol));
+    tr.appendChild(cell(direction));
+    tr.appendChild(cell(
+      stock.score == null ? "بانتظار بيانات السوق" : "درجة " + stock.score
+    ));
+    tbody.appendChild(tr);
+  });
+}
+
+async function loadSignals() {
+  const secretInput = document.getElementById("readSecret");
+  const secret = secretInput.value.trim();
+
+  if (!secret) {
+    setText("signalMessage", "أدخل مفتاح قراءة الإشارات أولًا.");
+    return;
+  }
+
+  showMessage("signalRows", "جارٍ قراءة إشارات Neon...", 5);
+  setText("signalMessage", "");
+
+  try {
+    const response = await fetch("/api/integration/signals", {
+      method: "GET",
+      headers: {
+        "X-Signals-Secret": secret
+      },
+      cache: "no-store"
+    });
+
+    if (response.status === 401) {
+      throw new Error("مفتاح القراءة غير صحيح");
+    }
+    if (response.status === 503) {
+      throw new Error("خدمة قراءة الإشارات غير متاحة");
+    }
+    if (!response.ok) {
+      throw new Error("فشل طلب الإشارات");
+    }
+
+    const data = await response.json();
+    const signals = Array.isArray(data.signals) ? data.signals : [];
+
+    const tbody = document.getElementById("signalRows");
+    tbody.replaceChildren();
+
+    if (!signals.length) {
+      showMessage("signalRows", "لا توجد إشارات محفوظة", 5);
+    }
+
+    signals.forEach(signal => {
+      const tr = document.createElement("tr");
+      tr.appendChild(cell(signal.symbol));
+      tr.appendChild(cell(signal.direction));
+      tr.appendChild(cell(signal.timeframe));
+      tr.appendChild(cell(
+        signal.verified_market_data ? "تم التحقق من البيانات" : "غير مؤكدة"
+      ));
+
+      let timestamp = "—";
+      if (signal.received_at) {
+        const date = new Date(signal.received_at);
+        if (!Number.isNaN(date.getTime())) {
+          timestamp = date.toLocaleString("ar-SA", {
+            timeZone: "Asia/Riyadh"
+          });
+        }
+      }
+
+      tr.appendChild(cell(timestamp));
+      tbody.appendChild(tr);
+    });
+
+    setText("signalCount", data.total ?? signals.length);
+    setText("signalMessage", "✅ تم تحميل الإشارات بنجاح");
+
+  } catch (error) {
+    showMessage("signalRows", "تعذر تحميل الإشارات", 5);
+    setText("signalMessage", error.message);
+  } finally {
+    secretInput.value = "";
+  }
+}
+
+document.getElementById("search").addEventListener("input", renderScanner);
+document.getElementById("filter").addEventListener("change", renderScanner);
+
+refreshStatus();
+loadScanner();
 </script>
 
 </body>
