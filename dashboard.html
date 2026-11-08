@@ -129,6 +129,47 @@ spellcheck="false"
 <p id="signalMessage" class="muted"></p>
 </div>
 
+<h2>📊 التحليل التلقائي — SPX والأسهم</h2>
+<div class="card">
+  <p class="muted">
+    مطابقة الإشارات المحفوظة بعد فحص حداثتها.
+    ليست توصيات شراء أو بيع.
+  </p>
+
+  <p>
+    استخدم مفتاح القراءة الموجود في قسم
+    الإشارات الواردة أعلاه.
+  </p>
+
+  <button onclick="loadAnalysis()">
+    تحليل SPX والأسهم
+  </button>
+
+  <p id="analysisStatus" class="muted">
+    لم يبدأ التحليل بعد.
+  </p>
+
+  <p id="analysisSPX">اتجاه SPX: —</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>السهم</th>
+          <th>الاتجاه</th>
+          <th>الحالة</th>
+          <th>الفريمات</th>
+        </tr>
+      </thead>
+      <tbody id="analysisRows">
+        <tr>
+          <td colspan="4">لا توجد نتائج بعد</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <h2>🛡️ مراقبة النظام</h2>
 <div class="card">
 <p id="systemStatus">جارٍ التحقق من النظام...</p>
@@ -323,7 +364,89 @@ async function loadSignals() {
   }
 }
 
-document.getElementById("search").addEventListener("input", renderScanner);
+async function loadAnalysis() {
+  const input = document.getElementById("readSecret");
+  const status = document.getElementById("analysisStatus");
+  const rows = document.getElementById("analysisRows");
+
+  const secret = input.value.trim();
+  input.value = "";
+
+  rows.replaceChildren();
+  setText("analysisSPX", "اتجاه SPX: —");
+
+  if (!secret) {
+    status.textContent = "أدخل مفتاح القراءة أولاً";
+    return;
+  }
+
+  status.textContent = "جارٍ تحليل الإشارات...";
+
+  try {
+    const response = await fetch("/api/analysis/saved", {
+      method: "GET",
+      headers: {
+        "X-Signals-Secret": secret
+      },
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("مفتاح القراءة غير صحيح");
+      }
+      throw new Error("فشل التحليل: " + response.status);
+    }
+
+    const data = await response.json();
+
+    setText(
+      "analysisSPX",
+      "اتجاه SPX: " + (data.spx_direction ?? "غير متوفر")
+    );
+
+    const results = Array.isArray(data.results)
+      ? data.results
+      : [];
+
+    for (const item of results) {
+      const tr = document.createElement("tr");
+
+      const frames = ["60", "30", "5"]
+        .map(f => f + ": " + (item.frames?.[f] ?? "—"))
+        .join(" | ");
+
+      [
+        item.symbol,
+        item.direction,
+        item.status,
+        frames
+      ].forEach(value => {
+        tr.appendChild(cell(value));
+      });
+
+      rows.appendChild(tr);
+    }
+
+    if (!results.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 4;
+      td.textContent = "لا توجد إشارات صالحة حالياً";
+      tr.appendChild(td);
+      rows.appendChild(tr);
+    }
+
+    status.textContent =
+      "اكتمل التحليل — " + results.length + " سهم";
+
+  } catch (error) {
+    status.textContent = error.message;
+  }
+}
+
+document.getElementById("search").addEventListener
+
 document.getElementById("filter").addEventListener("change", renderScanner);
 
 refreshStatus();
