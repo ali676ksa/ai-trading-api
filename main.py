@@ -103,3 +103,25 @@ def analyze_signal(data: dict = Body(...)):
         spx_direction=spx_direction
     )
 
+# Candle analysis - experimental endpoint
+from candle_engine import analyze_candles
+
+
+@app.post("/api/analysis/candles")
+def analyze_candle_request(data: dict = Body(...)):
+    symbol = data.get("symbol", "")
+    frames = data.get("frames", {})
+    spx_candles = data.get("spx_candles", [])
+
+    if not isinstance(frames, dict):
+        raise HTTPException(
+            status_code=400,
+            detail="frames must be an object"
+        )
+
+    return analyze_candles(
+        symbol=symbol,
+        stock_frames=frames,
+        spx_candles=spx_candles
+    )
+
