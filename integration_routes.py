@@ -216,34 +216,74 @@ def evaluate_saved_signals(
             detail="Signal storage unavailable"
         )
 
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+    
+    now = datetime.now(timezone.utc)
+
+    # Maximum age of each timeframe
+    max_age = {
+        "5": timedelta(minutes=20),
+        "30": timedelta(minutes=90),
+        "60": timedelta(minutes=180),
+    }
+
     grouped = {}
+    latest_times = {}
 
     for record in records:
-        symbol = str(record.get("symbol", "")).upper()
-        timeframe = str(record.get("timeframe", ""))
-        direction = str(record.get("direction", "")).upper()
+        symbol = str(
+            record.get("symbol", "")
+        ).upper()
 
-        if timeframe not in ("5", "30", "60"):
+        timeframe = str(
+            record.get("timeframe", "")
+        )
+
+        direction = str(
+            record.get("direction", "")
+        ).upper()
+
+        if timeframe not in max_age:
             continue
 
         if direction not in ("CALL", "PUT"):
             continue
 
         try:
-            received = datetime.fromisoformat(
-                record["received_at"].replace("Z", "+00:00")
-            )
-            if received.tzinfo is None or received < cutoff:
+            raw_time = record["received_at"]
+            if isinstance(raw_time, datetime):
+                received = raw_time
+            else:
+                received = datetime.fromisoformat(
+                    str(raw_time).replace("Z", "+00:00")
+                )
+
+            if received.tzinfo is None:
                 continue
+
+            received = received.astimezone(timezone.utc)
+
+            if received > now + timedelta(minutes=2):
+                continue
+
+            if now - received > max_age[timeframe]:
+                continue
+
         except (ValueError, TypeError, KeyError):
             continue
+
+        key = (symbol, timeframe)
+
+        if key in latest_times:
+            if received <= latest_times[key]:
+                continue
+
+        latest_times[key] = received
 
         if symbol not in grouped:
             grouped[symbol] = {}
 
-        if timeframe not in grouped[symbol]:
-            grouped[symbol][timeframe] = direction
+        grouped[symbol][timeframe] = direction
+
 
     
     # SPX hourly direction from saved signals
