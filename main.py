@@ -1,4 +1,4 @@
-
+from fastapi import HTTPException
 from fastapi import FastAPI
 from datetime import datetime, timezone
 
@@ -80,3 +80,26 @@ def scanner():
 
 from integration_routes import router
 app.include_router(router)
+
+# AI Trading Signal Engine
+from signal_engine import evaluate_signal
+from fastapi import Body
+
+@app.post("/api/analysis/evaluate")
+def analyze_signal(data: dict = Body(...)):
+    symbol = data.get("symbol", "")
+    signals = data.get("signals", {})
+    spx_direction = data.get("spx_direction")
+
+    if not isinstance(signals, dict):
+        raise HTTPException(
+            status_code=400,
+            detail="signals must be an object"
+        )
+
+    return evaluate_signal(
+        symbol=symbol,
+        signals=signals,
+        spx_direction=spx_direction
+    )
+
