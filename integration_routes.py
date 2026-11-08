@@ -245,23 +245,31 @@ def evaluate_saved_signals(
         if timeframe not in grouped[symbol]:
             grouped[symbol][timeframe] = direction
 
+    
+    # SPX hourly direction from saved signals
+    spx_direction = grouped.get("SPX", {}).get("60")
+
     results = []
 
     for symbol, frames in grouped.items():
-        results.append(
-            evaluate_signal(
-                symbol=symbol,
-                signals=frames,
-                spx_direction=None
-            )
+        if symbol == "SPX":
+            continue
+
+        analysis = evaluate_signal(
+            symbol=symbol,
+            signals=frames,
+            spx_direction=spx_direction
         )
+
+        results.append(analysis)
 
     return {
         "total": len(results),
+        "spx_direction": spx_direction,
         "results": results,
         "note": (
-            "Historical alerts only. "
-            "SPX verification and live market data unavailable."
+            "Saved alerts only. "
+            "Live market prices are not verified. "
+            "Results are not trade recommendations."
         )
     }
-
