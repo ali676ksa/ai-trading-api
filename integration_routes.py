@@ -172,3 +172,87 @@ def list_saved_signals(request: Request):
             "not trade recommendations"
         )
     }
+
+# Evaluate signals saved in Neon
+from signal_engine import evaluate_signal
+from datetime import datetime, timezone, timedelta
+
+@router.get("/api/analysis/saved")
+def evaluate_saved_signals(request: Request):
+    read_secret = os.getenv("SIGNALS_READ_SECRET", "")
+
+    if not read_secret:
+        raise HTTPException(
+            status_code=503,
+            detail="Signal access not configured"
+        )
+
+    supplied_secret = request.headers.get(
+        "X-Signals-Secret", ""
+    )
+
+    if not hmac.compare_digest(
+        supplied_secret, read_secret
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized"
+        )
+
+    try:
+        records = get_signals(limit=100)
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail="Signal storage unavailable"
+        )
+
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+    grouped = {}
+
+    for record in records:
+        symbol = str(record.get("symbol", "")).upper()
+        timeframe = str(record.get("timeframe", ""))
+        direction = str(record.get("direction", "")).upper()
+
+        if timeframe not in ("5", "30", "60"):
+            continue
+
+        if direction not in ("CALL", "PUT"):
+            continue
+
+        try:
+            received = datetime.fromisoformat(
+                record["received_at"].replace("Z", "+00:00")
+            )
+            if received.tzinfo is None or received < cutoff:
+                continue
+        except (ValueError, TypeError, KeyError):
+            continue
+
+        if symbol not in grouped:
+            grouped[symbol] = {}
+
+        if timeframe not in grouped[symbol]:
+            grouped[symbol][timeframe] = direction
+
+    results = []
+
+    for symbol, frames in grouped.items():
+        results.append(
+            evaluate_signal(
+                symbol=symbol,
+                signals=frames,
+                spx_direction=None
+            )
+        )
+
+    return {
+        "total": len(results),
+        "results": results,
+        "note": (
+            "Historical alerts only. "
+            "SPX verification and live market data unavailable."
+        )
+    }
+
