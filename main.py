@@ -125,3 +125,11 @@ def analyze_candle_request(data: dict = Body(...)):
         spx_candles=spx_candles
     )
 
+# Interactive Brokers connection status
+from ibkr_adapter import IBKRAdapter
+
+@app.get("/api/ibkr/status")
+def ibkr_status():
+    adapter = IBKRAdapter()
+    return adapter.status()
+
