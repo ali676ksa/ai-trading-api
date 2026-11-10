@@ -742,5 +742,197 @@ loadScanner();
 })();
 </script>
 
+<!-- Daily Options Scanner Statistics -->
+<style>
+#daily-stats {
+  direction: rtl;
+  box-sizing: border-box;
+  max-width: 100%;
+  margin: 18px 8px;
+  padding: 18px;
+  background: #1d253b;
+  color: #fff;
+  border: 1px solid #42516d;
+  border-radius: 18px;
+  font-family: Arial, sans-serif;
+}
+#daily-stats * { box-sizing: border-box; }
+#daily-stats h2 { font-size: 23px; }
+#daily-stats input {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #52617c;
+  border-radius: 9px;
+  background: #10182a;
+  color: #fff;
+  font-size: 16px;
+}
+#daily-stats button {
+  margin-top: 12px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: #4969d8;
+  color: white;
+  font-size: 16px;
+}
+#stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 10px;
+  margin-top: 15px;
+}
+.stats-box {
+  padding: 14px 8px;
+  background: #111b30;
+  border: 1px solid #334360;
+  border-radius: 12px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.stats-box span {
+  display: block;
+  color: #aebbd2;
+  font-size: 13px;
+}
+.stats-box strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 25px;
+}
+#stats-reasons {
+  margin-top: 15px;
+  line-height: 2;
+  overflow-wrap: anywhere;
+}
+</style>
+
+<section id="daily-stats">
+  <h2>📊 إحصائيات ماسح الأوبشن</h2>
+  <p>إحصائيات التقييمات التجريبية من Neon</p>
+
+  <input id="stats-secret"
+    type="password"
+    placeholder="مفتاح قراءة الإشارات"
+    autocomplete="off">
+
+  <button type="button" id="stats-refresh">
+    تحديث الإحصائيات
+  </button>
+
+  <p id="stats-status">لم يتم تحميل البيانات بعد.</p>
+  <div id="stats-grid"></div>
+  <div id="stats-reasons"></div>
+</section>
+
+<script>
+(function () {
+  const button = document.getElementById("stats-refresh");
+  const grid = document.getElementById("stats-grid");
+  const status = document.getElementById("stats-status");
+  const reasonsBox = document.getElementById("stats-reasons");
+  const secretInput = document.getElementById("stats-secret");
+
+  const reasonTranslations = {
+    "Market data not verified": "بيانات السوق غير موثقة",
+    "Market data not fresh": "بيانات السوق غير حديثة",
+    "Volume not confirmed": "حجم التداول غير مؤكد",
+    "Catalyst not confirmed": "المحفز غير مؤكد"
+  };
+
+  function addStat(label, value) {
+    const box = document.createElement("div");
+    box.className = "stats-box";
+
+    const caption = document.createElement("span");
+    caption.textContent = label;
+
+    const number = document.createElement("strong");
+    number.textContent = String(value);
+
+    box.append(caption, number);
+    grid.appendChild(box);
+  }
+
+  button.addEventListener("click", async function () {
+    const secret = secretInput.value.trim();
+
+    if (!secret) {
+      status.textContent = "أدخل مفتاح القراءة أولاً.";
+      return;
+    }
+
+    button.disabled = true;
+    status.textContent = "جاري قراءة الإحصائيات...";
+    grid.replaceChildren();
+    reasonsBox.replaceChildren();
+
+    try {
+      const response = await fetch(
+        "/api/opportunities/stats/daily",
+        {
+          headers: { "x-signals-secret": secret },
+          cache: "no-store"
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          response.status === 401
+            ? "مفتاح القراءة غير صحيح."
+            : "تعذر تحميل الإحصائيات."
+        );
+      }
+
+      const data = await response.json();
+
+      status.textContent =
+        "تاريخ التقرير: " + data.date +
+        " | محاكاة فقط";
+
+      addStat("عدد التقييمات", data.total_evaluations);
+      addStat("الأسهم المختلفة", data.unique_symbols);
+      addStat("CALL", data.call_count);
+      addStat("PUT", data.put_count);
+      addStat("WAIT", data.wait_count);
+      addStat("المرفوضة", data.rejected_count);
+      addStat(
+        "متوسط الدرجة",
+        data.average_score == null
+          ? "—"
+          : data.average_score + "/100"
+      );
+
+      const title = document.createElement("h3");
+      title.textContent = "أسباب الرفض";
+      reasonsBox.appendChild(title);
+
+      const reasons = data.top_rejection_reasons || [];
+
+      if (!reasons.length) {
+        const empty = document.createElement("p");
+        empty.textContent = "لا توجد أسباب رفض مسجلة.";
+        reasonsBox.appendChild(empty);
+      }
+
+      reasons.forEach(function (item) {
+        const p = document.createElement("p");
+        const translated =
+          reasonTranslations[item.reason] || item.reason;
+
+        p.textContent = translated + " — " + item.count;
+        reasonsBox.appendChild(p);
+      });
+
+    } catch (error) {
+      status.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+})();
+</script>
+<!-- End Daily Options Scanner Statistics -->
+
 </body>
 </html>
