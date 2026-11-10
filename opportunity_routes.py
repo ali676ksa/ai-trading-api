@@ -1,19 +1,13 @@
 
 from fastapi import APIRouter, Body, HTTPException
 
-from opportunity_filter import (
-    rank_candidates
-)
+from opportunity_filter import rank_candidates
 
-router = APIRouter(
-    prefix="/api/opportunities"
-)
+router = APIRouter(prefix="/api/opportunities")
 
 
 @router.post("/evaluate")
-def evaluate_opportunities(
-    data: dict = Body(...)
-):
+def evaluate_opportunities(data: dict = Body(...)):
     candidates = data.get("candidates", [])
 
     if not isinstance(candidates, list):
@@ -28,20 +22,34 @@ def evaluate_opportunities(
             detail="Maximum 50 candidates"
         )
 
-    if not all(
-        isinstance(item, dict)
-        for item in candidates
-    ):
+    if not all(isinstance(item, dict) for item in candidates):
         raise HTTPException(
             status_code=400,
             detail="Invalid candidate data"
         )
 
-    # Evaluation only, not a trade order
-    result = rank_candidates(candidates)
+    # Public input is never trusted as verified market data.
+    safe_candidates = []
+
+    for item in candidates:
+        safe_item = dict(item)
+
+        safe_item["verified_market_data"] = False
+        safe_item["fresh_market_data"] = False
+
+        safe_candidates.append(safe_item)
+
+    result = rank_candidates(safe_candidates)
 
     return {
         **result,
-        "mode": "experimental",
-        "orders_enabled": False
+        "selected": [],
+        "selected_count": 0,
+        "mode": "simulation_only",
+        "market_data_connected": False,
+        "orders_enabled": False,
+        "note": (
+            "Manual data cannot verify market prices. "
+            "No live trade recommendations."
+        )
     }
