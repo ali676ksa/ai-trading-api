@@ -1078,5 +1078,174 @@ loadScanner();
 </script>
 <!-- End Scanner Coverage Panel -->
 
+<!-- Scanner Scan History -->
+<style>
+#scanner-history-panel {
+  direction: rtl;
+  margin: 18px 8px;
+  padding: 18px;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #1d253b;
+  color: white;
+  border: 1px solid #42516d;
+  border-radius: 18px;
+  font-family: Arial, sans-serif;
+}
+#scanner-history-panel * {
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+#scanner-history-panel input {
+  width: 100%;
+  padding: 13px;
+  background: #10182a;
+  color: white;
+  border: 1px solid #52617c;
+  border-radius: 9px;
+  font-size: 16px;
+}
+#scanner-history-panel button {
+  margin-top: 12px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 10px;
+  color: white;
+  background: #4969d8;
+  font-size: 16px;
+}
+.scanner-history-card {
+  margin-top: 12px;
+  padding: 14px;
+  background: #111b30;
+  border: 1px solid #334360;
+  border-radius: 12px;
+  line-height: 1.9;
+}
+</style>
+
+<section id="scanner-history-panel">
+  <h2>📑 سجل فحوصات الأسهم</h2>
+  <p>الفحوصات المحفوظة في Neon</p>
+
+  <input
+    id="scan-history-secret"
+    type="password"
+    placeholder="مفتاح قراءة الإشارات"
+    autocomplete="off">
+
+  <button type="button" id="scan-history-refresh">
+    عرض سجل الفحوصات
+  </button>
+
+  <p id="scan-history-status">
+    لم يتم تحميل السجل بعد.
+  </p>
+
+  <div id="scan-history-results"></div>
+</section>
+
+<script>
+(function () {
+  const button =
+    document.getElementById("scan-history-refresh");
+  const input =
+    document.getElementById("scan-history-secret");
+  const status =
+    document.getElementById("scan-history-status");
+  const results =
+    document.getElementById("scan-history-results");
+
+  button.addEventListener("click", async function () {
+    const secret = input.value.trim();
+
+    if (!secret) {
+      status.textContent = "أدخل مفتاح القراءة أولاً.";
+      return;
+    }
+
+    button.disabled = true;
+    status.textContent = "جارٍ تحميل السجل...";
+    results.replaceChildren();
+
+    try {
+      const response = await fetch(
+        "/api/scanner/scans?limit=50",
+        {
+          headers: {
+            "x-signals-secret": secret
+          },
+          cache: "no-store"
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          response.status === 401
+            ? "مفتاح القراءة غير صحيح."
+            : "تعذر تحميل سجل الفحوصات."
+        );
+      }
+
+      const data = await response.json();
+      const scans = data.results || [];
+
+      status.textContent =
+        "عدد السجلات المعروضة: " + scans.length;
+
+      scans.forEach(function (scan) {
+        const card = document.createElement("div");
+        card.className = "scanner-history-card";
+
+        const date = scan.scan_time
+          ? new Date(scan.scan_time).toLocaleString(
+              "ar-SA",
+              { timeZone: "Asia/Riyadh" }
+            )
+          : "غير متوفر";
+
+        const fields = [
+          ["السهم", scan.symbol],
+          ["وقت الفحص", date],
+          ["المصدر", scan.data_source],
+          ["الحالة", scan.scan_status],
+          [
+            "التحقق",
+            scan.market_data_verified
+              ? "بيانات موثقة"
+              : "بيانات غير موثقة"
+          ],
+          [
+            "النوع",
+            scan.mode === "simulation_only"
+              ? "محاكاة فقط"
+              : "غير محدد"
+          ]
+        ];
+
+        fields.forEach(function (field) {
+          const line = document.createElement("div");
+          line.textContent =
+            field[0] + ": " + (field[1] ?? "—");
+          card.appendChild(line);
+        });
+
+        results.appendChild(card);
+      });
+
+      if (!scans.length) {
+        status.textContent = "لا توجد فحوصات محفوظة.";
+      }
+
+    } catch (error) {
+      status.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+})();
+</script>
+<!-- End Scanner Scan History -->
+
 </body>
 </html>
