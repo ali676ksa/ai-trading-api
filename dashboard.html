@@ -708,27 +708,37 @@ loadScanner();
       "المحفز غير مؤكد"
   };
 
+  
   const container =
     document.getElementById("history-results");
 
   if (!container) return;
 
-  const observer = new MutationObserver(function () {
-    observer.disconnect();
-
+  function translateHistory() {
     container.querySelectorAll("div").forEach(function (card) {
+      let translated = card.textContent;
+
       for (const [english, arabic] of Object.entries(translations)) {
-        if (card.textContent.includes(english)) {
-          card.textContent =
-            card.textContent.split(english).join(arabic);
-        }
+        translated = translated.split(english).join(arabic);
+      }
+
+      if (translated !== card.textContent) {
+        card.textContent = translated;
       }
     });
+  }
 
+  // Translate existing records and new records
+  translateHistory();
+
+  const observer = new MutationObserver(function () {
+    observer.disconnect();
+    translateHistory();
     observer.observe(container, { childList: true });
   });
 
   observer.observe(container, { childList: true });
+
 })();
 </script>
 
