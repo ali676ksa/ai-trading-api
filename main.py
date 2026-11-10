@@ -169,3 +169,9 @@ app.include_router(stats_router)
 from scanner_coverage_routes import router as scanner_router
 
 app.include_router(scanner_router)
+
+# Scanner scan history API
+from scanner_scan_routes import router as scanner_scan_router
+
+app.include_router(scanner_scan_router)
+
