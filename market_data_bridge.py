@@ -1,4 +1,4 @@
- 
+
 import os
 import hmac
 import re
@@ -9,8 +9,11 @@ from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/api/market-data")
 
-# Temporary memory only - cleared on server restart
+# Temporary in-memory storage
+# Data is cleared when the server restarts.
 quotes = {}
+
+MAX_AGE_SECONDS = 60
 
 
 class Quote(BaseModel):
@@ -22,8 +25,10 @@ class Quote(BaseModel):
 def authorize(secret):
     expected = os.getenv("MARKET_DATA_BRIDGE_SECRET")
 
-    if not expected or not secret or not hmac.compare_digest(
-        secret, expected
+    if (
+        not expected
+        or not secret
+        or not hmac.compare_digest(secret, expected)
     ):
         raise HTTPException(
             status_code=401,
@@ -41,12 +46,20 @@ def ingest_quote(
     symbol = quote.symbol.strip().upper()
 
     if not re.fullmatch(r"[A-Z0-9.\-]{1,15}", symbol):
-        raise HTTPException(400, "Invalid symbol")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid symbol"
+        )
 
     if quote.ask < quote.bid:
-        raise HTTPException(400, "Ask below bid")
+        raise HTTPException(
+            status_code=400,
+            detail="Ask below bid"
+        )
 
-    received_at = datetime.now(timezone.utc).isoformat()
+    received_at = datetime.now(
+        timezone.utc
+    ).isoformat()
 
     quotes[symbol] = {
         "symbol": symbol,
@@ -71,8 +84,36 @@ def get_quote(
 ):
     authorize(x_market_data_secret)
 
-    return quotes.get(symbol.upper(), {
-        "symbol": symbol.upper(),
-        "status": "no_data",
+    symbol = symbol.strip().upper()
+    quote = quotes.get(symbol)
+
+    if quote is None:
+        return {
+            "symbol": symbol,
+            "status": "no_data",
+            "verified_market_data": False,
+            "usable_for_signals": False
+        }
+
+    received = datetime.fromisoformat(
+        quote["received_at"]
+    )
+
+    age_seconds = max(
+        0,
+        (
+            datetime.now(timezone.utc) - received
+        ).total_seconds()
+    )
+
+    is_fresh = age_seconds <= MAX_AGE_SECONDS
+
+    return {
+        **quote,
+        "age_seconds": round(age_seconds, 1),
+        "status": (
+            "fresh_test" if is_fresh else "stale"
+        ),
+        "usable_for_signals": False,
         "verified_market_data": False
-    })
+    }
