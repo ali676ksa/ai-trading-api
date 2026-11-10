@@ -533,5 +533,111 @@ loadScanner();
 })();
 </script>
 
+<!-- Opportunity history -->
+<section id="opportunity-history" dir="rtl"
+  style="margin:24px 12px;padding:20px;
+  border:1px solid #39445f;border-radius:18px;
+  background:#1b243b;color:#fff;">
+
+  <h2>📋 سجل فرص الأوبشن</h2>
+
+  <p>نتائج الفلترة المحفوظة في Neon.
+     البيانات الحالية تجريبية وليست توصيات تداول.</p>
+
+  <input
+    id="history-secret"
+    type="password"
+    placeholder="مفتاح قراءة الإشارات"
+    autocomplete="off"
+    style="padding:12px;width:90%;
+    border-radius:8px;margin-bottom:12px;"
+  >
+
+  <button id="load-history"
+    style="background:#466bd5;color:white;
+    padding:12px;border:0;border-radius:8px;">
+    عرض سجل الفرص
+  </button>
+
+  <p id="history-status"></p>
+  <div id="history-results"></div>
+</section>
+
+<script>
+(function () {
+  const button = document.getElementById("load-history");
+  const status = document.getElementById("history-status");
+  const output = document.getElementById("history-results");
+
+  button.addEventListener("click", async function () {
+    const input = document.getElementById("history-secret");
+    const secret = input.value.trim();
+
+    if (!secret) {
+      status.textContent = "أدخل مفتاح القراءة أولاً";
+      return;
+    }
+
+    button.disabled = true;
+    status.textContent = "جارٍ تحميل السجل...";
+    output.replaceChildren();
+
+    try {
+      const response = await fetch(
+        "/api/opportunities/history?limit=50",
+        {
+          headers: {
+            "x-signals-secret": secret
+          },
+          cache: "no-store"
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+      }
+
+      const data = await response.json();
+      const records = Array.isArray(data.results)
+        ? data.results : [];
+
+      status.textContent =
+        "عدد السجلات: " + records.length;
+
+      for (const item of records) {
+        const card = document.createElement("div");
+
+        card.style.cssText =
+          "border-bottom:1px solid #48536b;" +
+          "padding:14px 0;white-space:pre-line;";
+
+        const reasons = Array.isArray(item.reasons)
+          ? item.reasons.join("، ")
+          : "";
+
+        card.textContent =
+          "السهم: " + item.symbol + "\n" +
+          "الاتجاه: " + item.direction + "\n" +
+          "الدرجة: " + item.score + "/100\n" +
+          "القرار: " + item.status + "\n" +
+          "النوع: " + item.mode + "\n" +
+          "السبب: " + (reasons || "غير محدد");
+
+        output.appendChild(card);
+      }
+
+    } catch (error) {
+      status.textContent =
+        error.message === "HTTP 401"
+          ? "مفتاح القراءة غير صحيح"
+          : "تعذر تحميل السجل: " + error.message;
+    } finally {
+      button.disabled = false;
+      document.getElementById("history-secret").value = "";
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
