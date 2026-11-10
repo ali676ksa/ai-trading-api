@@ -146,3 +146,9 @@ def ibkr_stock(symbol: str):
 def ibkr_options(symbol: str):
     adapter = IBKRAdapter()
     return adapter.get_option_chain(symbol)
+    
+# Market data bridge
+from market_data_bridge import router as market_data_router
+
+app.include_router(market_data_router)
+
