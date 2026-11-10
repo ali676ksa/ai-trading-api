@@ -1,0 +1,122 @@
+
+from collections import Counter
+from datetime import datetime, date, time, timedelta, timezone
+from zoneinfo import ZoneInfo
+
+from signal_store import get_connection
+from opportunity_store import init_opportunity_table
+
+
+RIYADH = ZoneInfo("Asia/Riyadh")
+
+
+def get_daily_opportunity_stats(day=None):
+    """
+    Daily screening statistics from Neon.
+    Simulation results remain separate.
+    No trading performance is inferred.
+    """
+
+    if day is None:
+        selected_day = datetime.now(RIYADH).date()
+    elif isinstance(day, str):
+        selected_day = date.fromisoformat(day)
+    elif isinstance(day, date):
+        selected_day = day
+    else:
+        raise ValueError("Invalid date")
+
+    start_local = datetime.combine(
+        selected_day,
+        time.min,
+        tzinfo=RIYADH
+    )
+
+    end_local = start_local + timedelta(days=1)
+
+    start_utc = start_local.astimezone(timezone.utc)
+    end_utc = end_local.astimezone(timezone.utc)
+
+    init_opportunity_table()
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    symbol,
+                    direction,
+                    score,
+                    status,
+                    mode,
+                    reasons
+                FROM opportunity_evaluations
+                WHERE saved_at >= %s
+                  AND saved_at < %s
+                  AND mode = %s
+                ORDER BY id DESC
+                """,
+                (
+                    start_utc,
+                    end_utc,
+                    "simulation_only"
+                )
+            )
+
+            rows = cur.fetchall()
+
+    directions = Counter()
+    statuses = Counter()
+    rejection_reasons = Counter()
+
+    scores = []
+    symbols = set()
+
+    for row in rows:
+        symbol, direction, score, status, mode, reasons = row
+
+        symbols.add(symbol)
+        directions[direction] += 1
+        statuses[status] += 1
+        scores.append(score)
+
+        if isinstance(reasons, list):
+            for reason in reasons:
+                if isinstance(reason, str):
+                    rejection_reasons[reason] += 1
+
+    total = len(rows)
+
+    average_score = (
+        round(sum(scores) / total, 2)
+        if total else None
+    )
+
+    top_reasons = [
+        {
+            "reason": reason,
+            "count": count
+        }
+        for reason, count in rejection_reasons.most_common(10)
+    ]
+
+    return {
+        "date": selected_day.isoformat(),
+        "timezone": "Asia/Riyadh",
+        "mode": "simulation_only",
+        "total_evaluations": total,
+        "unique_symbols": len(symbols),
+        "call_count": directions["CALL"],
+        "put_count": directions["PUT"],
+        "wait_count": directions["WAIT"],
+        "rejected_count": statuses["REJECTED"],
+        "average_score": average_score,
+        "top_rejection_reasons": top_reasons,
+        "verified_market_data": False,
+        "orders_enabled": False,
+        "note": (
+            "Counts are evaluation records, "
+            "not completed trades or profits. "
+            "Simulation data only."
+        )
+    }
