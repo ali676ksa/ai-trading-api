@@ -158,3 +158,9 @@ from opportunity_routes import router as opportunity_router
 
 app.include_router(opportunity_router)
 
+
+# Daily opportunity statistics
+from opportunity_stats_routes import router as stats_router
+
+app.include_router(stats_router)
+
