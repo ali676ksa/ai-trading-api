@@ -639,5 +639,98 @@ loadScanner();
 })();
 </script>
 
+<!-- Mobile layout improvements for opportunity history -->
+<style>
+  #opportunity-history {
+    box-sizing: border-box !important;
+    width: auto !important;
+    max-width: 100% !important;
+    margin: 20px 12px !important;
+    padding: 16px !important;
+    overflow-wrap: anywhere;
+  }
+
+  #opportunity-history * {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  #opportunity-history h2 {
+    font-size: 22px;
+    line-height: 1.5;
+  }
+
+  #opportunity-history input {
+    display: block;
+    width: 100% !important;
+    max-width: 100%;
+    font-size: 16px;
+    direction: ltr;
+  }
+
+  #opportunity-history button {
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.5;
+  }
+
+  #history-results > div {
+    overflow-wrap: anywhere;
+    word-break: normal;
+    line-height: 1.9;
+    font-size: 15px;
+  }
+
+  @media (max-width: 600px) {
+    #opportunity-history {
+      margin: 16px 8px !important;
+      padding: 14px !important;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  const translations = {
+    "Market data not verified":
+      "بيانات السوق غير موثقة",
+    "Market data not fresh":
+      "بيانات السوق غير حديثة",
+    "Options liquidity not confirmed":
+      "سيولة الأوبشن غير مؤكدة",
+    "Timeframes or SPX conflict":
+      "تعارض الفريمات مع اتجاه SPX",
+    "Breakout not confirmed":
+      "الاختراق أو الكسر غير مؤكد",
+    "Volume not confirmed":
+      "حجم التداول غير مؤكد",
+    "Catalyst not confirmed":
+      "المحفز غير مؤكد"
+  };
+
+  const container =
+    document.getElementById("history-results");
+
+  if (!container) return;
+
+  const observer = new MutationObserver(function () {
+    observer.disconnect();
+
+    container.querySelectorAll("div").forEach(function (card) {
+      for (const [english, arabic] of Object.entries(translations)) {
+        if (card.textContent.includes(english)) {
+          card.textContent =
+            card.textContent.split(english).join(arabic);
+        }
+      }
+    });
+
+    observer.observe(container, { childList: true });
+  });
+
+  observer.observe(container, { childList: true });
+})();
+</script>
+
 </body>
 </html>
