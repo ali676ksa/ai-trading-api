@@ -934,5 +934,149 @@ loadScanner();
 </script>
 <!-- End Daily Options Scanner Statistics -->
 
+<!-- Scanner Coverage Panel -->
+<style>
+#scanner-coverage-panel {
+  direction: rtl;
+  box-sizing: border-box;
+  max-width: 100%;
+  margin: 18px 8px;
+  padding: 18px;
+  background: #1d253b;
+  border: 1px solid #42516d;
+  border-radius: 18px;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+#scanner-coverage-panel * {
+  box-sizing: border-box;
+}
+#scanner-coverage-panel input {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #52617c;
+  border-radius: 9px;
+  background: #10182a;
+  color: white;
+  font-size: 16px;
+}
+#scanner-coverage-panel button {
+  margin-top: 12px;
+  padding: 12px 18px;
+  background: #4969d8;
+  border: 0;
+  border-radius: 10px;
+  color: white;
+  font-size: 16px;
+}
+#coverage-track {
+  width: 100%;
+  height: 14px;
+  overflow: hidden;
+  background: #10182a;
+  border-radius: 20px;
+}
+#coverage-fill {
+  width: 0%;
+  height: 100%;
+  background: #4969d8;
+  transition: width .3s;
+}
+</style>
+
+<section id="scanner-coverage-panel">
+  <h2>📡 تغطية الأسهم الخمسين</h2>
+
+  <p>عدد الأسهم المفحوصة ببيانات موثقة</p>
+
+  <input
+    id="coverage-secret"
+    type="password"
+    placeholder="مفتاح قراءة الإشارات"
+    autocomplete="off">
+
+  <button type="button" id="coverage-refresh">
+    تحديث التغطية
+  </button>
+
+  <h2 id="coverage-count">0/50</h2>
+
+  <div id="coverage-track">
+    <div id="coverage-fill"></div>
+  </div>
+
+  <p id="coverage-percent">0% تغطية موثقة</p>
+  <p id="coverage-message">
+    لم يتم تحميل بيانات التغطية بعد.
+  </p>
+</section>
+
+<script>
+(function () {
+  const button = document.getElementById("coverage-refresh");
+  const secretInput = document.getElementById("coverage-secret");
+  const count = document.getElementById("coverage-count");
+  const fill = document.getElementById("coverage-fill");
+  const percent = document.getElementById("coverage-percent");
+  const message = document.getElementById("coverage-message");
+
+  button.addEventListener("click", async function () {
+    const secret = secretInput.value.trim();
+
+    if (!secret) {
+      message.textContent = "أدخل مفتاح القراءة أولاً.";
+      return;
+    }
+
+    button.disabled = true;
+    message.textContent = "جارٍ تحميل التغطية...";
+
+    try {
+      const response = await fetch(
+        "/api/scanner/coverage",
+        {
+          headers: {
+            "x-signals-secret": secret
+          },
+          cache: "no-store"
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          response.status === 401
+            ? "مفتاح القراءة غير صحيح."
+            : "تعذر تحميل التغطية."
+        );
+      }
+
+      const data = await response.json();
+
+      const total = Number(data.total_stocks) || 50;
+      const verified = Number(data.verified_scanned) || 0;
+      const progress = Math.min(
+        100,
+        Math.max(0, Number(data.coverage_percent) || 0)
+      );
+
+      count.textContent = verified + "/" + total;
+      fill.style.width = progress + "%";
+      percent.textContent = progress + "% تغطية موثقة";
+
+      message.textContent =
+        verified === 0
+          ? "لا توجد فحوصات موثقة مسجلة حتى الآن."
+          : "تم تحميل حالة التغطية من الخادم.";
+
+    } catch (error) {
+      message.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+})();
+</script>
+<!-- End Scanner Coverage Panel -->
+
 </body>
 </html>
