@@ -133,3 +133,16 @@ def ibkr_status():
     adapter = IBKRAdapter()
     return adapter.status()
 
+
+# IBKR stock market data
+@app.get("/api/ibkr/stock/{symbol}")
+def ibkr_stock(symbol: str):
+    adapter = IBKRAdapter()
+    return adapter.get_stock_price(symbol)
+
+
+# IBKR options market data
+@app.get("/api/ibkr/options/{symbol}")
+def ibkr_options(symbol: str):
+    adapter = IBKRAdapter()
+    return adapter.get_option_chain(symbol)
