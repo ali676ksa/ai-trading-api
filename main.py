@@ -152,3 +152,9 @@ from market_data_bridge import router as market_data_router
 
 app.include_router(market_data_router)
 
+
+# Opportunity filtering engine
+from opportunity_routes import router as opportunity_router
+
+app.include_router(opportunity_router)
+
