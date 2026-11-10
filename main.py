@@ -164,3 +164,8 @@ from opportunity_stats_routes import router as stats_router
 
 app.include_router(stats_router)
 
+
+# Scanner coverage API
+from scanner_coverage_routes import router as scanner_router
+
+app.include_router(scanner_router)
